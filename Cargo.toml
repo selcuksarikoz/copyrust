@@ -1,0 +1,9 @@
+[package]
+name = "copyrust"
+version = "0.1.0"
+edition = "2024"
+description = "Fast interactive file copier for slow mounts (e.g. NTFS HDDs on macOS)"
+
+[profile.release]
+lto = true
+codegen-units = 1
