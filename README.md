@@ -1,6 +1,6 @@
-# copyrust
+# copyrust + optimizer
 
-An interactive file copier for the macOS terminal, including NTFS and ExFAT external disks.
+Two interactive macOS terminal commands: `copyrust` copies files to a target folder, and `optimizer` converts images in their source folder.
 
 ## Why it's fast
 
@@ -28,20 +28,21 @@ copyrust   # or optimizer; both run from anywhere
 
 ```sh
 cargo install --path .
-copyrust    # installed into ~/.cargo/bin
+copyrust    # or optimizer; both are installed into ~/.cargo/bin
 ```
 
 **Option 3 — `cargo run` (during development)**
 
 ```sh
 cargo run --release --bin copyrust
+cargo run --release --bin optimizer
 ```
 
 Requires a Rust toolchain (`rustup`) — edition 2024 needs Rust 1.85+.
 
 ## Image optimizer
 
-Run `target/release/optimizer` (or `./optimizer` when copied to the project root). It asks for one or more source folders, lists the available JPG/JPEG, PNG, WebP, and AVIF extensions with counts, and lets you select several at once. Then choose the output format, quality from 1 to 100 (default 80), and whether to delete originals (default Yes).
+Run `target/release/optimizer` or `./optimizer` from the project root. It asks for one or more source folders, lists the available JPG/JPEG, PNG, WebP, and AVIF extensions with counts, and lets you select several at once. Then choose the output format, quality from 1 to 100 (default 80), and whether to delete originals (default Yes).
 
 The optimizer processes up to two images at once on an HDD or four on an SSD. Progress output is refreshed at most ten times per second.
 
@@ -51,11 +52,20 @@ The converted image is placed beside its source with the new extension. Existing
 
 The result shows total input and output bytes for successful conversions. With original deletion enabled, it also shows estimated space saved (or extra space used if the output grew). When originals are kept, it reports the additional space occupied by the new files.
 
+Example result when originals are deleted:
+
+```text
+Done. converted: 2500, originals deleted: 2500, failed: 0, input: 5368709120 bytes, output: 3221225472 bytes
+Estimated space saved: 2.00 GiB (40.0%)
+
+Ready for another job. Enter a source folder or q to quit.
+```
+
 Both `copyrust` and `optimizer` return to the source-folder prompt after each job. Enter `q` at that prompt to exit.
 
 PNG remains lossless; its quality number controls compression effort and file size, not visual quality. Animated images are not supported. Some metadata and color profiles may not survive conversion between formats; JPEG also cannot retain transparency.
 
-## Usage
+## File copier
 
 To run the wizard directly without installing, use `target/release/copyrust`:
 
@@ -99,7 +109,11 @@ Choose extensions (e.g. 1,3-5; empty = all): 1,2
 Target folder (created if missing): /Volumes/BackupNTFS/photos
 Target disk: ntfs / HDD (1 worker(s)).
 ...
-[============================  ]  91% (2275/2500) failed: 0
+[==============================] 100% (2500/2500) failed: 0
+
+Done. copied: 2500, renamed: 0, skipped: 0, source deleted: 2500, failed: 0
+
+Ready for another job. Enter a source folder or q to quit.
 ```
 
 ## Notes
