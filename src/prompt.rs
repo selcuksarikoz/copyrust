@@ -3,7 +3,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-// Reads one trimmed line from stdin; a closed pipe (EOF/Ctrl-C) is a hard error.
+// Reads one trimmed line from stdin; EOF is reported to the calling command.
 pub fn read_line() -> io::Result<String> {
     let mut buf = String::new();
     io::stdout().flush()?;
@@ -45,16 +45,23 @@ pub struct SourceInput {
 
 // Prompts for one or more source folders.
 pub fn source_folders() -> io::Result<SourceInput> {
+    source_folders_with(|_| true)
+}
+
+pub fn source_folders_with(include: impl Fn(&Path) -> bool) -> io::Result<SourceInput> {
     loop {
-        print!("Source folders (paste/drop folder paths): ");
+        print!("Source folders (paste/drop folder paths, q = quit): ");
         let input = read_line()?;
+        if input.eq_ignore_ascii_case("q") || input.eq_ignore_ascii_case("quit") {
+            return Err(io::Error::new(io::ErrorKind::Interrupted, "user quit"));
+        }
         let mut dirs = Vec::new();
         let mut files = Vec::new();
         let mut invalid = false;
         for token in source_tokens(&input) {
             match fs::canonicalize(&token) {
                 Ok(p) if p.is_dir() => {
-                    files.extend(crate::files::collect_files(&p)?);
+                    files.extend(crate::files::collect_files_with(&p, &include)?);
                     dirs.push(p);
                 }
                 _ => {

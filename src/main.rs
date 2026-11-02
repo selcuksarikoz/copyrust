@@ -1,7 +1,3 @@
-mod disk;
-mod files;
-mod prompt;
-
 use std::collections::{HashMap, HashSet};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -9,8 +5,9 @@ use std::process::ExitCode;
 use std::sync::mpsc;
 use std::thread;
 
-use files::{common_root, ConflictAction, Plan, PostCopyAction};
-use prompt::{dir_path, menu, select_extensions, source_folders};
+use copyrust::files::{self, common_root, ConflictAction, Plan, PostCopyAction};
+use copyrust::prompt::{dir_path, menu, select_extensions, source_folders};
+use copyrust::disk;
 
 // Parallel workers to use per target disk type: HDDs hate concurrent random I/O.
 const HDD_WORKERS: usize = 1;
@@ -35,12 +32,19 @@ struct Stats {
 }
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("error: {e}");
-            ExitCode::FAILURE
+    let mut failed = false;
+    loop {
+        match run() {
+            Ok(()) => failed = false,
+            Err(e) if matches!(e.kind(), io::ErrorKind::Interrupted | io::ErrorKind::UnexpectedEof) => {
+                return if failed { ExitCode::FAILURE } else { ExitCode::SUCCESS };
+            }
+            Err(e) => {
+                failed = true;
+                eprintln!("error: {e}");
+            }
         }
+        println!("\nReady for another job. Enter a source folder or q to quit.\n");
     }
 }
 
